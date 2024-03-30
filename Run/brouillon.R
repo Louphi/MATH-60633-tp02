@@ -20,9 +20,13 @@ rf_maturities <- as.numeric(attr(rf, "names"))
 # Set risk-free rates
 rf_rates <- rf[,1]
 
-# Find option maturity in # years
-years = f_days_to_years(c(20, 20, 40, 40), 250)
+# Set last SP500 price
+last_price_sp500 <- tail(sp500[, 1], n=1)
 
-# Interpolate linearly the rates for each maturity
-interpolations = f_linear_interpolation(years, rf_maturities, rf_rates)
+# Define Black-Scholes variables
+S <- rep(last_price_sp500, 4)
+K <- c(1600, 1650, 1750, 1800)
+T <- f_days_to_years(c(20, 20, 40, 40), 250)
+r <- f_linear_interpolation(T, rf_maturities, rf_rates)
+
 
