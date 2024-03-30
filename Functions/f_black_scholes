@@ -1,5 +1,5 @@
 # Define a function to calculate the price of a European option using the Black-Scholes formula
-price = function(S, K, r, T, sigma, type) {
+f_black_scholes <- function(S, K, r, T, sigma, type) {
   # S: Current stock price
   # K: Strike price of the option
   # r: Risk-free interest rate

@@ -21,12 +21,19 @@ rf_maturities <- as.numeric(attr(rf, "names"))
 rf_rates <- rf[,1]
 
 # Set last SP500 price
-last_price_sp500 <- tail(sp500[, 1], n=1)
+last_sp500 <- tail(sp500[, 1], n=1)
+
+# Set last VIX value
+last_vix <- tail(vix[, 1], n=1)
 
 # Define Black-Scholes variables
-S <- rep(last_price_sp500, 4)
+S <- rep(last_sp500, 4)
 K <- c(1600, 1650, 1750, 1800)
 T <- f_days_to_years(c(20, 20, 40, 40), 250)
 r <- f_linear_interpolation(T, rf_maturities, rf_rates)
+sig <- rep(last_vix, 4)
+types <- rep("C", 4)
 
+# Compute option values
+option_prices <- f_black_scholes(S, K, r, T, sig, type="C")
 
