@@ -37,3 +37,10 @@ types <- rep("C", 4)
 # Compute option values
 option_prices <- f_black_scholes(S, K, r, T, sig, type="C")
 
+# Option quantities
+quantity <- c(1, 1, 1, 1)
+
+# Portfolio value
+value <- t(quantity) %*% option_prices
+
+
