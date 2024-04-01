@@ -1,9 +1,7 @@
 library("here")
 library("PerformanceAnalytics")
 source(here("Functions", "f_load_data"))
-source(here("Functions", "f_fit_mle"))
 source(here("Functions", "f_generate_scenarios"))
-
 
 # Load data
 data <- f_load_data()
@@ -15,37 +13,48 @@ rf <- data$rf
 calls <- data$calls
 puts <- data$puts
 
-# Compute sp500 returns
-rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
+# Compute sp500 and VIX log returns
+log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
+log_rets_vix <- as.vector(PerformanceAnalytics::CalculateReturns(vix, method = "log")[-1])
+log_rets <- cbind(rets_sp500, rets_vix)
 
-# Fit MLE to returns
-mle <- f_fit_mle(rets_sp500)
-mu <- mle[1]
-sig <- mle[2]
+# Mean and Covariance Matrix of sample log returns
+mu <- apply(log_rets, MARGIN = 2, FUN = mean)
+Sigma <- cov(log_rets)
 
-# Set last SP500 price
+# Set parameters for scenario generations
+scenarios <- 10000
+n <- 5
+
+# Set last SP500 & VIX
 last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
+last_vix <- as.numeric(tail(vix[, 1], n=1))
 
-# Set scenario settings
-scenarios <- 100
-n <- 50
+# Generate samples from bivariate normal distribution
+data <- f_generate_log_returns(mu, Sigma, scenarios, n)
+data_sp500 <- matrix(data[,"rets_sp500"], nrow = scenarios, ncol = n)
+data_vix <- matrix(data[,"rets_vix"], nrow = scenarios, ncol = n)
 
-# Generate log returns
-log_returns <- f_generate_log_returns(mu, sig, scenarios, n)
+# Compute cumulative returns and price for SP500
+cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
+cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+prices_sp500 <- last_sp500 * cum_rets_sp500
 
-# Compute cumulative returns and prices
-cumulative_returns <- exp(t(apply(log_returns, 1, cumsum)))
-cumulative_returns <- data.frame(X0 = rep(1, scenarios), cumulative_returns)
-prices <- last_sp500 * cumulative_returns
+# Compute cumulative returns and price for VIX
+cum_rets_vix <- exp(t(apply(data_vix, 1, cumsum)))
+cum_rets_vix <- data.frame(X0 = rep(1, scenarios), cum_rets_vix)
+prices_vix <- last_vix * cum_rets_vix
 
-# Open a PNG device
-png("sp500_etf_simulation.png", width = 800, height = 600)
+# Set up a plotting area with two panels
+png("sp500_vix_plots.png", width = 800, height = 1200)
+par(mfrow = c(2, 1))
 
-# Plot the evolution of the price for each simulation
-matplot(t(prices), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price ($)", main = "Simulated Daily Price Evolution of SP500 ETF")
+# Plot prices for SP500
+matplot(t(prices_sp500), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price", main = "SP500 Price Evolution")
 
-# Close the device
+# Plot prices for VIX
+matplot(t(prices_vix), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price", main = "VIX Price Evolution")
+
+# Close the plotting device
 dev.off()
-
-# EN FAIT IL FAUT SIMULER DES PRIX POUR LE VIX AUSSI, DONC TIRER DES SAMPLES A PARTIR DUNE BIVARIE
 

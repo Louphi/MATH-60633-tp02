@@ -1,11 +1,12 @@
-# Define function to generate log returns
-f_generate_log_returns <- function(mu, sig, scenarios, n) {
-    # Create empty matrix for scenarios
-    scenarios_matrix <- matrix(nrow = scenarios, ncol = n)
+library("MASS")
 
-    # Populate matrix with random log returns
-    for (i in 1:nrow(scenarios_matrix)) {
-        scenarios_matrix[i, ] <- rnorm(n = n, mean = mu, sd = sig)
-    }
-    scenarios_matrix
+# Define function to generate draws from bivariate normal
+f_generate_log_returns <- function(mu, Sigma, scenarios, n) {
+
+    sp500_matrix <- matrix(data = NA, nrow = scenarios, ncol = n)
+    vix_matrix <- matrix(data = NA, nrow = scenarios, ncol = n)
+
+    sample <- mvrnorm(n * scenarios, mu, Sigma)
+
+    sample
 }
