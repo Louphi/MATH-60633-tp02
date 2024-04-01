@@ -2,11 +2,6 @@ library("MASS")
 
 # Define function to generate draws from bivariate normal
 f_generate_log_returns <- function(mu, Sigma, scenarios, n) {
-
-    sp500_matrix <- matrix(data = NA, nrow = scenarios, ncol = n)
-    vix_matrix <- matrix(data = NA, nrow = scenarios, ncol = n)
-
     sample <- mvrnorm(n * scenarios, mu, Sigma)
-
     sample
 }
