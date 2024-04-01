@@ -47,3 +47,5 @@ matplot(t(prices), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", y
 # Close the device
 dev.off()
 
+# EN FAIT IL FAUT SIMULER DES PRIX POUR LE VIX AUSSI, DONC TIRER DES SAMPLES A PARTIR DUNE BIVARIE
+
