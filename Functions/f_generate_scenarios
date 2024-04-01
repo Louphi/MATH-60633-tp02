@@ -1,0 +1,11 @@
+# Define function to generate log returns
+f_generate_log_returns <- function(mu, sig, scenarios, n) {
+    # Create empty matrix for scenarios
+    scenarios_matrix <- matrix(nrow = scenarios, ncol = n)
+
+    # Populate matrix with random log returns
+    for (i in 1:nrow(scenarios_matrix)) {
+        scenarios_matrix[i, ] <- rnorm(n = n, mean = mu, sd = sig)
+    }
+    scenarios_matrix
+}

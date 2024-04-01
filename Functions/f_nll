@@ -1,0 +1,12 @@
+# Define negative log-likelihood function
+f_nll <- function(theta, x) {
+    # Extract parameters
+    mu <- theta[1]
+    sig <- theta[2]
+    
+    # Compute negative log-likelihood
+    out <- -sum(dnorm(x, mu, sig, log = TRUE))
+    out
+}
+
+

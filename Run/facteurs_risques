@@ -1,9 +1,9 @@
 library("here")
 library("PerformanceAnalytics")
-source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
-source(here("Functions", "f_days_to_years"))
-source(here("Functions", "f_linear_interpolation"))
+source(here("Functions", "f_fit_mle"))
+source(here("Functions", "f_generate_scenarios"))
+
 
 # Load data
 data <- f_load_data()
@@ -16,12 +16,34 @@ calls <- data$calls
 puts <- data$puts
 
 # Compute sp500 returns
-rets_sp500 <- PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1]
+rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
 
-# Compute mean and average
-mu <- mean(rets_sp500)
-sig <- var(rets_sp500)
+# Fit MLE to returns
+mle <- f_fit_mle(rets_sp500)
+mu <- mle[1]
+sig <- mle[2]
 
+# Set last SP500 price
+last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
 
+# Set scenario settings
+scenarios <- 100
+n <- 50
 
+# Generate log returns
+log_returns <- f_generate_log_returns(mu, sig, scenarios, n)
+
+# Compute cumulative returns and prices
+cumulative_returns <- exp(t(apply(log_returns, 1, cumsum)))
+cumulative_returns <- data.frame(X0 = rep(1, scenarios), cumulative_returns)
+prices <- last_sp500 * cumulative_returns
+
+# Open a PNG device
+png("sp500_etf_simulation.png", width = 800, height = 600)
+
+# Plot the evolution of the price for each simulation
+matplot(t(prices), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price ($)", main = "Simulated Daily Price Evolution of SP500 ETF")
+
+# Close the device
+dev.off()
 
