@@ -18,13 +18,13 @@ log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method
 log_rets_vix <- as.vector(PerformanceAnalytics::CalculateReturns(vix, method = "log")[-1])
 log_rets <- cbind(rets_sp500, rets_vix)
 
-# Mean and Covariance Matrix of sample log returns
+# Compute mean and covariance matrix of past log returns
 mu <- apply(log_rets, MARGIN = 2, FUN = mean)
 Sigma <- cov(log_rets)
 
-# Set parameters for scenario generations
-scenarios <- 10000
-n <- 5
+# Set parameters for scenario generation
+scenarios <- 100
+n <- 50
 
 # Set last SP500 & VIX
 last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
