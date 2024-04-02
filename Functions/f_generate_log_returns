@@ -5,3 +5,9 @@ f_generate_bivariate_log_returns <- function(mu, Sigma, scenarios, n) {
     sample <- mvrnorm(n * scenarios, mu, Sigma)
     sample
 }
+
+# Define function to generate draws from univariate norma
+f_generate_univariate_log_returns <- function(mu, sigma, scenarios, n) {
+    sample <- rnorm(n * scenarios, mu, sigma)
+    sample
+}

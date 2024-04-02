@@ -1,8 +1,10 @@
 library("here")
+library("PerformanceAnalytics")
 source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
+source(here("Functions", "f_generate_log_returns"))
 
 # Load data
 data <- f_load_data()

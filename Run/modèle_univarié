@@ -1,0 +1,76 @@
+library("here")
+library("PerformanceAnalytics")
+source(here("Functions", "f_black_scholes"))
+source(here("Functions", "f_load_data"))
+source(here("Functions", "f_days_to_years"))
+source(here("Functions", "f_linear_interpolation"))
+source(here("Functions", "f_generate_log_returns"))
+source(here("Run", "portefeuille_options.R"))
+
+# Load data
+data <- f_load_data()
+
+# Define data
+sp500 <- data$sp500
+vix <- data$vix
+rf <- data$rf
+calls <- data$calls
+puts <- data$puts
+
+# Compute sp500
+log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
+
+# Compute mean and covariance matrix of past log returns
+mu <- mean(log_rets_sp500)
+sigma <- sd(log_rets_sp500)
+
+# Set parameters for scenario generation
+scenarios <- 10000
+n <- 5
+
+# Set last SP500 & VIX
+last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
+last_vix <- as.numeric(tail(vix[, 1], n=1))
+
+# Generate samples from bivariate normal distribution
+data <- f_generate_univariate_log_returns(mu, sigma, scenarios, n)
+
+# Define sp500 log returns matrix
+data_sp500 <- matrix(data, nrow = scenarios, ncol = n)
+
+# Compute cumulative returns and price for SP500
+cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
+cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+prices_sp500 <- last_sp500 * cum_rets_sp500
+
+# Set risk-free maturities (in years)
+rf_maturities <- as.numeric(attr(rf, "names"))
+
+# Set risk-free rates
+rf_rates <- rf[,1]
+
+# Define Black-Scholes variables
+K <- c(1600, 1650, 1750, 1800)
+T <- f_days_to_years(c(15, 15, 35, 35), 250)
+r <- f_linear_interpolation(T, rf_maturities, rf_rates)
+
+# Define option price matrix
+options_prices <- matrix(data = NA, nrow = scenarios, ncol = 4)
+
+for (i in 1:scenarios) {
+    price_sp500 <- prices_sp500[i, n]
+    S <- rep(price_sp500, 4)
+    sig <- rep(last_vix, 4)
+    prices <- f_black_scholes(S, K, r, T, sig, type="C")
+    options_prices[i,] <- prices
+}
+
+# Option quantities
+quantities <- c(1, 1, 1, 1)
+
+# portfolio values t=5
+values <- options_prices %*% quantities
+
+# portfolio profits t=5
+profits <- values - as.numeric(value)
+
