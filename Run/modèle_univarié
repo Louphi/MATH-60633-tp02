@@ -5,6 +5,7 @@ source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_log_returns"))
+source(here("Functions", "f_risk_measures"))
 source(here("Run", "portefeuille_options.R"))
 
 # Load data
@@ -74,3 +75,8 @@ values <- options_prices %*% quantities
 # portfolio profits t=5
 profits <- values - as.numeric(value)
 
+# VaR
+VaR <- f_VaR(profits, alpha = 0.95)
+
+# Expected Shortfall
+ES <- f_ES(profits, alpha = 0.95)
