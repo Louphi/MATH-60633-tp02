@@ -5,6 +5,7 @@ source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_bivariate_log_returns"))
+source(here("Run", "portefeuille_options.R"))
 
 # Load data
 data <- f_load_data()
@@ -73,3 +74,11 @@ for (i in 1:scenarios) {
     options_prices[i,] <- prices
 }
 
+# Option quantities
+quantities <- c(1, 1, 1, 1)
+
+# portfolio values t=5
+values <- options_prices %*% quantities
+
+# portfolio profits t=5
+profits <- values - as.numeric(value)
