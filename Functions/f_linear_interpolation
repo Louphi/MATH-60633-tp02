@@ -1,9 +1,11 @@
 # Define a function for linear interpolation of risk-free rates
 f_linear_interpolation <- function(years, maturities, rates) {
-  # Create interpolation function for known maturities and rates
+  # Create an interpolation function for known maturities and rates
   interp_func <- approxfun(maturities, rates, method = "linear")
   
-  # Interpolate the rate for given maturity
+  # Interpolate the rate for the given maturity
   interpolated_rate <- interp_func(years)
-  interpolated_rate
+  
+  # Return the interpolated rate
+  return(interpolated_rate)
 }
