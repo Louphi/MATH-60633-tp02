@@ -1,7 +1,7 @@
 library("MASS")
 
 # Define function to generate draws from bivariate normal
-f_generate_log_returns <- function(mu, Sigma, scenarios, n) {
+f_generate_bivariate_log_returns <- function(mu, Sigma, scenarios, n) {
     sample <- mvrnorm(n * scenarios, mu, Sigma)
     sample
 }

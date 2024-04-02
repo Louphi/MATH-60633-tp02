@@ -1,7 +1,10 @@
 library("here")
 library("PerformanceAnalytics")
+source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
-source(here("Functions", "f_generate_scenarios_bivarie"))
+source(here("Functions", "f_days_to_years"))
+source(here("Functions", "f_linear_interpolation"))
+source(here("Functions", "f_generate_bivariate_log_returns"))
 
 # Load data
 data <- f_load_data()
@@ -31,7 +34,9 @@ last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
 last_vix <- as.numeric(tail(vix[, 1], n=1))
 
 # Generate samples from bivariate normal distribution
-data <- f_generate_log_returns(mu, Sigma, scenarios, n)
+data <- f_generate_bivariate_log_returns(mu, Sigma, scenarios, n)
+
+# Separate marginals
 data_sp500 <- matrix(data[,"log_rets_sp500"], nrow = scenarios, ncol = n)
 data_vix <- matrix(data[,"log_rets_vix"], nrow = scenarios, ncol = n)
 
@@ -45,16 +50,26 @@ cum_rets_vix <- exp(t(apply(data_vix, 1, cumsum)))
 cum_rets_vix <- data.frame(X0 = rep(1, scenarios), cum_rets_vix)
 prices_vix <- last_vix * cum_rets_vix
 
-# Set up a plotting area with two panels
-png("sp500_vix_plots.png", width = 800, height = 1200)
-par(mfrow = c(2, 1))
+# Set risk-free maturities (in years)
+rf_maturities <- as.numeric(attr(rf, "names"))
 
-# Plot prices for SP500
-matplot(t(prices_sp500), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price", main = "SP500 Price Evolution")
+# Set risk-free rates
+rf_rates <- rf[,1]
 
-# Plot prices for VIX
-matplot(t(prices_vix), type = "l", lty = 1, col = rgb(0, 0, 1, 0.1), xlab = "Day", ylab = "Price", main = "VIX Price Evolution")
+# Define Black-Scholes variables
+K <- c(1600, 1650, 1750, 1800)
+T <- f_days_to_years(c(15, 15, 35, 35), 250)
+r <- f_linear_interpolation(T, rf_maturities, rf_rates)
 
-# Close the plotting device
-dev.off()
+# Define option price matrix
+options_prices <- matrix(data = NA, nrow = scenarios, ncol = 4)
+
+for (i in 1:scenarios) {
+    price_sp500 <- prices_sp500[i, n]
+    price_vix <- prices_vix[i, n]
+    S <- rep(price_sp500, 4)
+    sig <- rep(price_vix, 4)
+    prices <- f_black_scholes(S, K, r, T, sig, type="C")
+    options_prices[i,] <- prices
+}
 
