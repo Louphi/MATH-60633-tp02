@@ -1,0 +1,28 @@
+library("here")
+
+# Generate price scenarios for the next period (in days)
+
+f_price_scenarios<- function(sp500, period = 5 ,n_sim = 10000){
+  
+  # Get last price 
+  last_price <- as.numeric(sp500[nrow(sp500),1])
+  
+  # Compute sp500 returns
+  rets_sp500 <- PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1]
+  
+  # Compute mean and average
+  mu <- mean(rets_sp500)
+  sig <- var(rets_sp500)
+  
+  # Simulate scenarios
+  period <- 5 
+  mu_sim <- mu * period
+  sig_sim <- sqrt(period) * sig
+  # Comme les returns sont iid, on peut simuler toute la période en même temps
+  
+  random_numbers <- rnorm(10000, mu_sim, sig_sim)
+  p_scenarios <- exp(random_numbers) * last_price
+  
+  return(p_scenarios)
+  
+}
