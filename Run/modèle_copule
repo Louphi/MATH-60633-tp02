@@ -4,6 +4,7 @@ library("copula")
 source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
+source(here("Functions", "f_risk_measures"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_log_returns"))
 source(here("Functions", "f_PIT_t"))
@@ -54,11 +55,11 @@ data_vix <- matrix(data[,2], nrow = scenarios, ncol = n)
 
 # Compute cumulative returns and price for SP500
 cumul_rets_sp500 <- f_cumul_returns(data_sp500, scenarios)
-prices_sp500 <- last_sp500 * cum_rets_sp500
+prices_sp500 <- last_sp500 * cumul_rets_sp500
 
 # Compute cumulative returns and price for VIX
-cumul_rets_sp500 <- f_cumul_returns(data_vix, scenarios)
-prices_vix <- last_vix * cum_rets_vix
+cumul_rets_vix <- f_cumul_returns(data_vix, scenarios)
+prices_vix <- last_vix * cumul_rets_vix
 
 # Set risk-free maturities (in years)
 rf_maturities <- as.numeric(attr(rf, "names"))
@@ -98,8 +99,8 @@ VaR <- f_VaR(profits, alpha = 0.95)
 # Expected Shortfall
 ES <- f_ES(profits, alpha = 0.95)
 
+# Plot the first histogram
+hist(data[,1], breaks=50)
 
-
-
-
-
+# Add the second histogram
+hist(data[,2], breaks=50, add=TRUE)
