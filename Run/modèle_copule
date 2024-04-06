@@ -99,8 +99,5 @@ VaR <- f_VaR(profits, alpha = 0.95)
 # Expected Shortfall
 ES <- f_ES(profits, alpha = 0.95)
 
-# Plot the first histogram
-hist(data[,1], breaks=50)
 
-# Add the second histogram
-hist(data[,2], breaks=50, add=TRUE)
+

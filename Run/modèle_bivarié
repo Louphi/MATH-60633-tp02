@@ -46,11 +46,11 @@ data_vix <- matrix(data[,"log_rets_vix"], nrow = scenarios, ncol = n)
 
 # Compute cumulative returns and price for SP500
 cumul_rets_sp500 <- f_cumul_returns(data_sp500, scenarios)
-prices_sp500 <- last_sp500 * cum_rets_sp500
+prices_sp500 <- last_sp500 * cumul_rets_sp500
 
 # Compute cumulative returns and price for VIX
 cumul_rets_vix <- f_cumul_returns(data_vix, scenarios)
-prices_vix <- last_vix * cum_rets_vix
+prices_vix <- last_vix * cumul_rets_vix
 
 # Set risk-free maturities (in years)
 rf_maturities <- as.numeric(attr(rf, "names"))
