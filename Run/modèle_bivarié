@@ -82,3 +82,9 @@ values <- options_prices %*% quantities
 
 # portfolio profits t=5
 profits <- values - as.numeric(value)
+
+# VaR
+VaR <- f_VaR(profits, alpha = 0.95)
+
+# Expected Shortfall
+ES <- f_ES(profits, alpha = 0.95)

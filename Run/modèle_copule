@@ -1,0 +1,113 @@
+library("here")
+library("PerformanceAnalytics")
+library("copula")
+source(here("Functions", "f_black_scholes"))
+source(here("Functions", "f_load_data"))
+source(here("Functions", "f_days_to_years"))
+source(here("Functions", "f_linear_interpolation"))
+source(here("Functions", "f_generate_log_returns"))
+source(here("Run", "portefeuille_options.R"))
+
+# Load data
+data <- f_load_data()
+
+# Define data
+sp500 <- data$sp500
+vix <- data$vix
+rf <- data$rf
+calls <- data$calls
+puts <- data$puts
+
+# Compute sp500 and VIX log returns
+log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
+log_rets_vix <- as.vector(PerformanceAnalytics::CalculateReturns(vix, method = "log")[-1])
+
+# Compute means and sd, and set nu for sp500
+mean_sp500 <- mean(log_rets_sp500)
+sd_sp500 <- sd(log_rets_sp500)
+nu_sp500 <- 10
+theta_sp500 <- c(mean_sp500, sd_sp500, nu_sp500)
+
+# Compute means and sd, and set nu for VIX
+mean_vix <- mean(log_rets_vix)
+sd_vix <- sd(log_rets_vix)
+nu_vix <- 5
+theta_vix <- c(mean_vix, sd_vix, nu_vix)
+
+# Compute probability integral transform
+U_sp500 <- pstd(log_rets_sp500, mean = theta_sp500[1], sd = theta_sp500[2], nu = theta_sp500[3])
+U_vix <- pstd(log_rets_vix, mean = theta_vix[1], sd = theta_vix[2], nu = theta_vix[3])
+U <- cbind(U_sp500, U_vix)
+
+# Set normal copula with d=2 & fit it to U data
+C <-normalCopula(dim = 2)
+fit <- fitCopula(C, data = U, method = "ml")
+
+# Set parameters for scenario generation
+scenarios <- 10000
+n <- 5
+
+# Set last SP500 & VIX
+last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
+last_vix <- as.numeric(tail(vix[, 1], n=1))
+
+# Samples
+data <- f_generate_copula_log_returns(fit, scenarios, n, theta_sp500, theta_vix)
+
+# Separate marginals
+data_sp500 <- matrix(data[,1], nrow = scenarios, ncol = n)
+data_vix <- matrix(data[,2], nrow = scenarios, ncol = n)
+
+# Compute cumulative returns and price for SP500
+cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
+cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+prices_sp500 <- last_sp500 * cum_rets_sp500
+
+# Compute cumulative returns and price for VIX
+cum_rets_vix <- exp(t(apply(data_vix, 1, cumsum)))
+cum_rets_vix <- data.frame(X0 = rep(1, scenarios), cum_rets_vix)
+prices_vix <- last_vix * cum_rets_vix
+
+# Set risk-free maturities (in years)
+rf_maturities <- as.numeric(attr(rf, "names"))
+
+# Set risk-free rates
+rf_rates <- rf[,1]
+
+# Define Black-Scholes variables
+K <- c(1600, 1650, 1750, 1800)
+T <- f_days_to_years(c(15, 15, 35, 35), 250)
+r <- f_linear_interpolation(T, rf_maturities, rf_rates)
+
+# Define option price matrix
+options_prices <- matrix(data = NA, nrow = scenarios, ncol = 4)
+
+for (i in 1:scenarios) {
+    price_sp500 <- prices_sp500[i, n]
+    price_vix <- prices_vix[i, n]
+    S <- rep(price_sp500, 4)
+    sig <- rep(price_vix, 4)
+    prices <- f_black_scholes(S, K, r, T, sig, type="C")
+    options_prices[i,] <- prices
+}
+
+# Option quantities
+quantities <- c(1, 1, 1, 1)
+
+# portfolio values t=5
+values <- options_prices %*% quantities
+
+# portfolio profits t=5
+profits <- values - as.numeric(value)
+
+# VaR
+VaR <- f_VaR(profits, alpha = 0.95)
+
+# Expected Shortfall
+ES <- f_ES(profits, alpha = 0.95)
+
+
+
+
+
+
