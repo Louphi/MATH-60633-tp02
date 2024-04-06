@@ -1,10 +1,12 @@
 library("here")
 library("PerformanceAnalytics")
+library("copula")
 source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_log_returns"))
+source(here("Functions", "f_cumul_returns"))
 source(here("Run", "portefeuille_options.R"))
 
 # Load data
@@ -42,13 +44,11 @@ data_sp500 <- matrix(data[,"log_rets_sp500"], nrow = scenarios, ncol = n)
 data_vix <- matrix(data[,"log_rets_vix"], nrow = scenarios, ncol = n)
 
 # Compute cumulative returns and price for SP500
-cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
-cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+cumul_rets_sp500 <- f_cumul_returns(data_sp500, scenarios)
 prices_sp500 <- last_sp500 * cum_rets_sp500
 
 # Compute cumulative returns and price for VIX
-cum_rets_vix <- exp(t(apply(data_vix, 1, cumsum)))
-cum_rets_vix <- data.frame(X0 = rep(1, scenarios), cum_rets_vix)
+cumul_rets_vix <- f_cumul_returns(data_vix, scenarios)
 prices_vix <- last_vix * cum_rets_vix
 
 # Set risk-free maturities (in years)

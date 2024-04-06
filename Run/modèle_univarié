@@ -1,11 +1,12 @@
 library("here")
 library("PerformanceAnalytics")
+library("copula")
 source(here("Functions", "f_black_scholes"))
 source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_log_returns"))
-source(here("Functions", "f_risk_measures"))
+source(here("Functions", "f_cumul_returns"))
 source(here("Run", "portefeuille_options.R"))
 
 # Load data
@@ -18,7 +19,7 @@ rf <- data$rf
 calls <- data$calls
 puts <- data$puts
 
-# Compute sp500
+# Compute sp500 log returns
 log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
 
 # Compute mean and covariance matrix of past log returns
@@ -40,8 +41,7 @@ data <- f_generate_univariate_log_returns(mu, sigma, scenarios, n)
 data_sp500 <- matrix(data, nrow = scenarios, ncol = n)
 
 # Compute cumulative returns and price for SP500
-cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
-cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+cumul_rets_sp500 <- f_cumul_returns(data_sp500, scenarios)
 prices_sp500 <- last_sp500 * cum_rets_sp500
 
 # Set risk-free maturities (in years)

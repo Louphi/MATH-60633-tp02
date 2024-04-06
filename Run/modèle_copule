@@ -6,6 +6,8 @@ source(here("Functions", "f_load_data"))
 source(here("Functions", "f_days_to_years"))
 source(here("Functions", "f_linear_interpolation"))
 source(here("Functions", "f_generate_log_returns"))
+source(here("Functions", "f_PIT_t"))
+source(here("Functions", "f_cumul_returns"))
 source(here("Run", "portefeuille_options.R"))
 
 # Load data
@@ -22,21 +24,13 @@ puts <- data$puts
 log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
 log_rets_vix <- as.vector(PerformanceAnalytics::CalculateReturns(vix, method = "log")[-1])
 
-# Compute means and sd, and set nu for sp500
-mean_sp500 <- mean(log_rets_sp500)
-sd_sp500 <- sd(log_rets_sp500)
-nu_sp500 <- 10
-theta_sp500 <- c(mean_sp500, sd_sp500, nu_sp500)
-
-# Compute means and sd, and set nu for VIX
-mean_vix <- mean(log_rets_vix)
-sd_vix <- sd(log_rets_vix)
-nu_vix <- 5
-theta_vix <- c(mean_vix, sd_vix, nu_vix)
+# Compute means and sd, and set nu for sp500 and VIX
+theta_sp500 <- c(mean(log_rets_sp500), sd(log_rets_sp500), 10)
+theta_vix <- c(mean(log_rets_vix), sd(log_rets_vix), 5)
 
 # Compute probability integral transform
-U_sp500 <- pstd(log_rets_sp500, mean = theta_sp500[1], sd = theta_sp500[2], nu = theta_sp500[3])
-U_vix <- pstd(log_rets_vix, mean = theta_vix[1], sd = theta_vix[2], nu = theta_vix[3])
+U_sp500 <- f_PIT_t(log_rets_sp500, theta_sp500)
+U_vix <- f_PIT_t(log_rets_vix, theta_vix)
 U <- cbind(U_sp500, U_vix)
 
 # Set normal copula with d=2 & fit it to U data
@@ -59,13 +53,11 @@ data_sp500 <- matrix(data[,1], nrow = scenarios, ncol = n)
 data_vix <- matrix(data[,2], nrow = scenarios, ncol = n)
 
 # Compute cumulative returns and price for SP500
-cum_rets_sp500 <- exp(t(apply(data_sp500, 1, cumsum)))
-cum_rets_sp500 <- data.frame(X0 = rep(1, scenarios), cum_rets_sp500)
+cumul_rets_sp500 <- f_cumul_returns(data_sp500, scenarios)
 prices_sp500 <- last_sp500 * cum_rets_sp500
 
 # Compute cumulative returns and price for VIX
-cum_rets_vix <- exp(t(apply(data_vix, 1, cumsum)))
-cum_rets_vix <- data.frame(X0 = rep(1, scenarios), cum_rets_vix)
+cumul_rets_sp500 <- f_cumul_returns(data_vix, scenarios)
 prices_vix <- last_vix * cum_rets_vix
 
 # Set risk-free maturities (in years)
