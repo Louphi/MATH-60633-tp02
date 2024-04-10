@@ -1,24 +1,9 @@
 library("here")
 library("PerformanceAnalytics")
-library("copula")
-source(here("Functions", "f_black_scholes"))
-source(here("Functions", "f_risk_measures"))
-source(here("Functions", "f_load_data"))
-source(here("Functions", "f_days_to_years"))
-source(here("Functions", "f_linear_interpolation"))
-source(here("Functions", "f_generate_log_returns"))
-source(here("Functions", "f_cumul_returns"))
+
 source(here("Run", "portefeuille_options.R"))
-
-# Load data
-data <- f_load_data()
-
-# Define data
-sp500 <- data$sp500
-vix <- data$vix
-rf <- data$rf
-calls <- data$calls
-puts <- data$puts
+files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
+sapply(files.sources, source)
 
 # Compute sp500 and VIX log returns
 log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
@@ -32,10 +17,6 @@ Sigma <- cov(log_rets)
 # Set parameters for scenario generation
 scenarios <- 10000
 n <- 5
-
-# Set last SP500 & VIX
-last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
-last_vix <- as.numeric(tail(vix[, 1], n=1))
 
 # Generate samples from bivariate normal distribution
 data <- f_generate_bivariate_log_returns(mu, Sigma, scenarios, n)
@@ -51,12 +32,6 @@ prices_sp500 <- last_sp500 * cumul_rets_sp500
 # Compute cumulative returns and price for VIX
 cumul_rets_vix <- f_cumul_returns(data_vix, scenarios)
 prices_vix <- last_vix * cumul_rets_vix
-
-# Set risk-free maturities (in years)
-rf_maturities <- as.numeric(attr(rf, "names"))
-
-# Set risk-free rates
-rf_rates <- rf[,1]
 
 # Define Black-Scholes variables
 K <- c(1600, 1650, 1750, 1800)

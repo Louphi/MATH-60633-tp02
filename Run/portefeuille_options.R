@@ -1,32 +1,22 @@
 library("here")
 library("PerformanceAnalytics")
-source(here("Functions", "f_black_scholes"))
-source(here("Functions", "f_load_data"))
-source(here("Functions", "f_days_to_years"))
-source(here("Functions", "f_linear_interpolation"))
-source(here("Functions", "f_generate_log_returns"))
 
-# Load data
+files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
+sapply(files.sources, source)
+
+# Load & define data
 data <- f_load_data()
-
-# Define data
 sp500 <- data$sp500
 vix <- data$vix
 rf <- data$rf
-calls <- data$calls
-puts <- data$puts
 
-# Set risk-free maturities (in years)
+# Set risk-free maturities (in years) & rates
 rf_maturities <- as.numeric(attr(rf, "names"))
-
-# Set risk-free rates
 rf_rates <- rf[,1]
 
-# Set last SP500 price
-last_sp500 <- tail(sp500[, 1], n=1)
-
-# Set last VIX value
-last_vix <- tail(vix[, 1], n=1)
+# Set last SP500 & VIX price
+last_sp500 <- as.numeric(tail(sp500[, 1], n=1))
+last_vix <- as.numeric(tail(vix[, 1], n=1))
 
 # Define Black-Scholes variables
 S <- rep(last_sp500, 4)
