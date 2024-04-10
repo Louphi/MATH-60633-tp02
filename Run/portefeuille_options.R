@@ -9,6 +9,8 @@ data <- f_load_data()
 sp500 <- data$sp500
 vix <- data$vix
 rf <- data$rf
+calls <- data$calls
+puts <- data$puts
 
 # Set risk-free maturities (in years) & rates
 rf_maturities <- as.numeric(attr(rf, "names"))

@@ -1,0 +1,18 @@
+library("here")
+library("PerformanceAnalytics")
+
+source(here("Run", "portefeuille_options.R"))
+files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
+sapply(files.sources, source)
+
+# Compute moneyness for each option
+calls <- cbind(calls, m = calls[, "K"] / last_sp500)
+puts <- cbind(puts, m = puts[, "K"] / last_sp500)
+options <- rbind(calls, puts)
+
+# Minimize absolute distance between observed IV and model IV
+alpha_0 <- c(0.1, 0.1, 0.1, 0.1)
+tmp <- optim(par = alpha_0, fn = f_error, m = options[, "m"], tau = options[, "tau"], obs_iv = options[, "IV"])
+
+# Get optim parameters
+alpha <- tmp$par
