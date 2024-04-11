@@ -2,8 +2,7 @@ library("here")
 library("PerformanceAnalytics")
 
 source(here("Run", "portefeuille_options.R"))
-files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
-sapply(files.sources, source)
+source(here("Run", "modele_copule.R"))
 
 # Compute moneyness for each option
 calls <- cbind(calls, m = calls[, "K"] / last_sp500)
@@ -11,8 +10,42 @@ puts <- cbind(puts, m = puts[, "K"] / last_sp500)
 options <- rbind(calls, puts)
 
 # Minimize absolute distance between observed IV and model IV
-alpha_0 <- c(0.1, 0.1, 0.1, 0.1)
+alpha_0 <- c(0.2, 0.1, 0.1, 0.1)
 tmp <- optim(par = alpha_0, fn = f_error, m = options[, "m"], tau = options[, "tau"], obs_iv = options[, "IV"])
 
 # Get optim parameters
 alpha <- tmp$par
+
+# Define Black-Scholes variables
+K <- c(1600, 1650, 1750, 1800)
+T <- f_days_to_years(c(15, 15, 35, 35), 250)
+T_r <- f_days_to_years(c(15, 15, 35, 35), 360)
+r <- f_linear_interpolation(T_r, rf_maturities, rf_rates)
+
+# Define option price matrix
+options_prices_surfaces <- matrix(data = NA, nrow = scenarios, ncol = 4)
+
+for (i in 1:scenarios) {
+    price_sp500 <- prices_sp500[i, n+1]
+    price_vix <- prices_vix[i, n+1]
+    S <- rep(price_sp500, 4)
+    m <- K / price_sp500
+    sig <- f_compute_iv(m, T, alpha) - (price_vix - (alpha[1] + alpha[4]))
+    prices <- f_black_scholes(S, K, r, T, sig, type="C")
+    options_prices_surfaces[i,] <- prices
+}
+
+# Option quantities
+quantities <- c(1, 1, 1, 1)
+
+# portfolio values t=5
+values_surfaces <- options_prices_surfaces %*% quantities
+
+# portfolio profits t=5
+profits_surfaces <- values_surfaces - as.numeric(value)
+
+# VaR
+VaR_surfaces <- f_VaR(profits_surfaces, alpha = 0.95)
+
+# Expected Shortfall
+ES_surfaces <- f_ES(profits_surfaces, alpha = 0.95)
