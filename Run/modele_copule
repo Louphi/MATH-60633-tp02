@@ -3,8 +3,6 @@ library("copula")
 library("PerformanceAnalytics")
 
 source(here("Run", "portefeuille_options.R"))
-files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
-sapply(files.sources, source)
 
 # Compute sp500 and VIX log returns
 log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
@@ -22,6 +20,10 @@ U <- cbind(U_sp500, U_vix)
 # Set normal copula with d=2 & fit it to U data
 C <-normalCopula(dim = 2)
 fit <- fitCopula(C, data = U, method = "ml")
+
+# Set parameters for scenario generation
+scenarios <- 10000
+n <- 5
 
 # Samples
 data <- f_generate_copula_log_returns(fit, scenarios, n, theta_sp500, theta_vix)
@@ -45,7 +47,7 @@ T_r <- f_days_to_years(c(15, 15, 35, 35), 360)
 r <- f_linear_interpolation(T_r, rf_maturities, rf_rates)
 
 # Define option price matrix
-options_prices <- matrix(data = NA, nrow = scenarios, ncol = 4)
+options_prices_copule <- matrix(data = NA, nrow = scenarios, ncol = 4)
 
 for (i in 1:scenarios) {
     price_sp500 <- prices_sp500[i, n+1]
@@ -53,23 +55,23 @@ for (i in 1:scenarios) {
     S <- rep(price_sp500, 4)
     sig <- rep(price_vix, 4)
     prices <- f_black_scholes(S, K, r, T, sig, type="C")
-    options_prices[i,] <- prices
+    options_prices_copule[i,] <- prices
 }
 
 # Option quantities
 quantities <- c(1, 1, 1, 1)
 
 # portfolio values t=5
-values <- options_prices %*% quantities
+values_copule <- options_prices_copule %*% quantities
 
 # portfolio profits t=5
-profits <- values - as.numeric(value)
+profits_copule <- values_copule - as.numeric(value)
 
 # VaR
-VaR <- f_VaR(profits, alpha = 0.95)
+VaR_copule <- f_VaR(profits_copule, alpha = 0.95)
 
 # Expected Shortfall
-ES <- f_ES(profits, alpha = 0.95)
+ES_copule <- f_ES(profits_copule, alpha = 0.95)
 
 
 
