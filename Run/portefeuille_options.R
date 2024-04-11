@@ -1,7 +1,8 @@
 library("here")
 library("PerformanceAnalytics")
 
-files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
+setwd(here())
+files.sources = list.files(path = here("Functions"), full.names = TRUE)
 sapply(files.sources, source)
 
 # Load & define data
@@ -37,5 +38,3 @@ quantities <- c(1, 1, 1, 1)
 
 # Portfolio value
 value <- t(quantities) %*% option_prices
-
-
