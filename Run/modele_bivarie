@@ -2,8 +2,6 @@ library("here")
 library("PerformanceAnalytics")
 
 source(here("Run", "portefeuille_options.R"))
-files.sources = list.files(path = here("MATH 60633 tp02", "Functions"))
-sapply(files.sources, source)
 
 # Compute sp500 and VIX log returns
 log_rets_sp500 <- as.vector(PerformanceAnalytics::CalculateReturns(sp500, method = "log")[-1])
@@ -40,7 +38,7 @@ T_r <- f_days_to_years(c(15, 15, 35, 35), 360)
 r <- f_linear_interpolation(T_r, rf_maturities, rf_rates)
 
 # Define option price matrix
-options_prices <- matrix(data = NA, nrow = scenarios, ncol = 4)
+options_prices_bivarie <- matrix(data = NA, nrow = scenarios, ncol = 4)
 
 for (i in 1:scenarios) {
     price_sp500 <- prices_sp500[i, n+1]
@@ -48,20 +46,20 @@ for (i in 1:scenarios) {
     S <- rep(price_sp500, 4)
     sig <- rep(price_vix, 4)
     prices <- f_black_scholes(S, K, r, T, sig, type="C")
-    options_prices[i,] <- prices
+    options_prices_bivarie[i,] <- prices
 }
 
 # Option quantities
 quantities <- c(1, 1, 1, 1)
 
 # portfolio values t=5
-values <- options_prices %*% quantities
+values_bivarie <- options_prices_bivarie %*% quantities
 
 # portfolio profits t=5
-profits <- values - as.numeric(value)
+profits_bivarie <- values_bivarie - as.numeric(value)
 
 # VaR
-VaR <- f_VaR(profits, alpha = 0.95)
+VaR_bivarie <- f_VaR(profits_bivarie, alpha = 0.95)
 
 # Expected Shortfall
-ES <- f_ES(profits, alpha = 0.95)
+ES_bivarie <- f_ES(profits_bivarie, alpha = 0.95)
