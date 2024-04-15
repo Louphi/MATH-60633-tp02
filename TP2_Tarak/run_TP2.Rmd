@@ -250,6 +250,8 @@ f_Visualize_Portfolio_stats(data = pnl_mv_gauss,
                           VaR  = VaR95_mv_gauss,
                           ES   = ES95_mv_gauss)
 ```
+Nous pouvons remarquer que la VaR et l'ES donne des perte plus faible dans le cas de la distribution gaussienne multivariée que dans le cas de la distribution gaussienne univariée. Cela est dû à la corrélation négative entre les rendements de l'S&P 500 et du VIX, qui est prise en compte dans le modèle multivarié. Cette corrélation négative permet de limiter la baisse de prix liée aux rendements très faibles par l'augmentation du VIX et donc de la volatilité des options. 
+
 
 ## Partie 5 - Deux facteurs de risque et modèle copule-marginal (Student-t et copule gaussienne)
 
@@ -265,7 +267,7 @@ f_display_copula_margins(data   = cbind(as.numeric(logrets_sp500), as.numeric(lo
                        lim2   = 800)
 ```
 
-Aucune relation linéaire claire ne peut être conclue de ce premier nuage de points.
+Nous pouvons observer une relation négative entre les rendements logarithmiques du S&P 500 et du VIX. Cela suggère que les deux variables sont corrélées négativement. Ainsi, la copule Gaussienne tiendra compte de cette relation dans la modélisation des distributions uniformes. 
 
 Nous utiliserons une Copule Gaussienne avec des marges de distribution *student-t* :
    
@@ -402,12 +404,19 @@ f_Visualize_Portfolio_stats(data = pnl_Copula,
                           VaR = VaR95_book_Copula,
                           ES = ES95_book_Copula)
 ```
+Nous pouvons remarquer que la VaR et la CVaR montre que les pertes sont plus faibles dans le cas de la distribution copule-marginal que dans le cas de la distribution gaussienne multivariée et de la gaussienne univariée. Cela est dû à la prise en compte de la corrélation négative entre les rendements de l'S&P 500 et du VIX, et à une meilleure modélisation du risque de queues en comparaison à la gaussienne multivariée. 
+
+```{r warning=FALSE}
+
 
 ## Partie 6 - Surface de volatilité
+```
 
 1. Ajustez une surface de volatilité aux volatilités implicites observées sur le marché (options d’achat et de vente négociées). Minimisez la distance absolue entre les volatilités implicites du marché et les volatilités implicites du modèle.
 
+
 ```{r warning=FALSE}
+
 # Combinaison des options d'achat (calls) et de vente (puts) dans un seul dataframe
 calls_and_puts <- rbind(calls, puts)
 
@@ -420,7 +429,7 @@ market_IV <- calls_and_puts[,3]  # Volatilité implicite observée sur le march�
 s <- last_price
 m <- k / s  # Moneyness
 
-alpha0 <- rep(1, 4)
+alpha0 <- c(0,0,0,last_vix)  # Initialisation des paramètres du modèle [alpha1, alpha2, alpha3, alpha4]
 # Minimiser la distance absolue entre les volatilités implicites du marché et celles du modèle
 tmp <- optim(par       = alpha0,
              fn        = f_minimize_IV,
@@ -472,9 +481,10 @@ ggplot(plot_data, aes(x = moneyness, y = IV, color = type)) +
 
 ```{r warning=FALSE}
 # Calibrer la volatilité implicite ajustée
-atm_vol <- last_vix - (alpha[1] + alpha[4])  # Calcul de la volatilité à la monnaie (ATM)
 
-# Calculer la moneyness pour chaque option
+vol_adj <- sim_prices_vix_Copula - (alpha[1] + alpha[4])  # Calcul de l'ajustement de la volatilité implicite
+
+# Calculer la moneyness pour chaque option 
 K_rep <- matrix(data = rep(new_book$K, each = n_sim),
                 ncol = nrow(new_book))  # Répéter les prix d'exercice pour chaque simulation
 m_sim <- K_rep / matrix(data = sim_prices_sp500_Copula,
@@ -485,7 +495,7 @@ tau_sim <- matrix(data = rep(new_book$tau, each = n_sim),
 
 # Calculer la surface de volatilité implicite du modèle pour chaque option
 model_sim_IV <- f_parametric_surface(m = m_sim, tau = tau_sim, alpha)
-model_sim_IV <- model_sim_IV  + atm_vol  # Ajouter la volatilité à la monnaie à la volatilité du modèle
+model_sim_IV <- model_sim_IV  + vol_adj  # Ajouter la volatilité à la monnaie à la volatilité du modèle
 
 # Re-tarifer chaque option du portefeuille
 new_book_prices_IV <- matrix(NA, nrow = n_sim, ncol = ncol(new_book))
@@ -504,8 +514,25 @@ new_book_values_IV <- f_Get_Book_values_VolSurf(S = sim_prices_sp500_Copula,
                                               vol = model_sim_IV,
                                               n_sim = n_sim)
 
+
+# Pour comparer les P&L, nous devons estimer le prix de nos options au temps t avec 
+# la surface de volatilité paramétrique. On recalcule donc le prix de notre portefeuille initial 
+
+init_book_prices_IV <- matrix(NA, nrow = n_sim, ncol = ncol(new_book))
+init_model_IV <- f_parametric_surface(m = init_book$S/init_book$K, tau = init_book$tau, alpha)
+
+
+init_book_values_IV <- sum( blackscholes(callput = 1,
+                                         S0 = init_book$S,
+                                         K = init_book$K,
+                                         r = init_book$r, 
+                                         time = init_book$tau,
+                                         vola = init_model_IV)$Price )
+
+
+
 # Calculer les P&L
-pnl_IV <- new_book_values_IV  - init_book_value
+pnl_IV <- new_book_values_IV  - init_book_values_IV
 
 # Calculer la VaR95 et l'ES95
 VaR95_IV <- f_VaR(pnl_IV, level)
